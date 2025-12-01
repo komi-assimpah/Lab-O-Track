@@ -1,135 +1,126 @@
+#include "drivers/buzzer/buzzer.h"
+#include "drivers/i2c/i2c.h"
+#include "drivers/lcd/lcd.h"
+#include "drivers/led/led.h"
 #include <avr/io.h>
 #include <util/delay.h>
-#include "drivers/led/led.h"
-#include "drivers/buzzer/buzzer.h"
 
-// Test individuel du buzzer
-void test_buzzer_patterns(void) {
-    // 1. Startup
-    led_on(LED_GREEN);
-    buzzer_pattern_startup();
-    led_off(LED_GREEN);
-    _delay_ms(500);
-    
-    // 2. Success
-    led_on(LED_GREEN);
-    buzzer_pattern_success();
-    led_off(LED_GREEN);
-    _delay_ms(500);
-    
-    // 3. Warning
-    led_on(LED_BLUE);
-    buzzer_pattern_warning();
-    led_off(LED_BLUE);
-    _delay_ms(500);
-    
-    // 4. Alert
-    led_on(LED_RED);
-    buzzer_pattern_alert();
-    led_off(LED_RED);
-    _delay_ms(500);
-    
-    // 5. Error
-    led_on(LED_RED);
-    buzzer_pattern_error();
-    led_off(LED_RED);
-    _delay_ms(500);
-}
 
-// Test coordonné LED + Buzzer
-void test_combined_patterns(void) {
-    // Alerte équipement manquant
-    for (uint8_t i = 0; i < 3; i++) {
-        led_on(LED_RED);
-        buzzer_on();
-        _delay_ms(150);
-        
-        led_off(LED_RED);
-        buzzer_off();
-        _delay_ms(150);
-    }
-    
-    _delay_ms(500);
-    
-    // Équipement retrouvé
-    led_pattern_success();
-    buzzer_pattern_success();
-    
-    _delay_ms(1000);
-}
-
-// Simulation système de traçabilité
-void simulate_tracking_system(void) {
-    // Système normal
-    led_on(LED_GREEN);
-    buzzer_pattern_startup();
-    _delay_ms(2000);
-    
-    // Équipement retiré (warning)
-    led_all_off();
-    led_on(LED_BLUE);
-    buzzer_beep(100);
-    _delay_ms(3000);
-    
-    // Timeout atteint (alerte)
-    led_off(LED_BLUE);
-    for (uint8_t i = 0; i < 5; i++) {
-        led_on(LED_RED);
-        buzzer_on();
-        _delay_ms(200);
-        
-        led_off(LED_RED);
-        buzzer_off();
-        _delay_ms(200);
-    }
-    
-    _delay_ms(1000);
-    
-    // Équipement retourné
-    led_on(LED_GREEN);
-    buzzer_pattern_success();
-    _delay_ms(2000);
-    
-    led_all_off();
-}
+/*
+ * ============================================================================
+ * EXEMPLE D'UTILISATION DU LCD GROVE 16x2
+ * ============================================================================
+ *
+ * Ce programme montre comment utiliser le driver LCD.
+ * Il affiche différents messages sur l'écran.
+ */
 
 int main(void) {
-    // Initialisation des drivers
-    led_init_all();
-    buzzer_init();
-    
-    // Séquence de démarrage
-    led_pattern_startup();
-    buzzer_pattern_startup();
-    
-    _delay_ms(1000);
-    
-    while (1) {
-        // Test 1 : Patterns du buzzer seul
-        test_buzzer_patterns();
-        _delay_ms(1000);
-        
-        // Test 2 : Patterns LED + Buzzer combinés
-        test_combined_patterns();
-        _delay_ms(1000);
-        
-        // Test 3 : Simulation système complet
-        simulate_tracking_system();
-        _delay_ms(2000);
-        
-        // Test 4 : Sirène (optionnel, peut être bruyant !)
-        // Décommente si tu veux tester
-        // led_on(LED_RED);
-        // buzzer_pattern_siren(2);
-        // led_off(LED_RED);
-        // _delay_ms(2000);
-        
-        // Test 5 : SOS Morse
-        led_on(LED_RED);
-        buzzer_pattern_morse_sos();
-        led_off(LED_RED);
-        _delay_ms(3000);
+  // ========================================================================
+  // INITIALISATION
+  // ========================================================================
+
+  // Initialise les LEDs et le buzzer
+  led_init_all();
+  buzzer_init();
+
+  // Signal de démarrage
+  led_on(LED_GREEN);
+  buzzer_beep(100);
+  _delay_ms(200);
+  led_off(LED_GREEN);
+
+  // Initialise le bus I2C (IMPORTANT : à faire AVANT lcd_init !)
+  i2c_init();
+
+  // Initialise l'écran LCD
+  lcd_init();
+
+  // ========================================================================
+  // AFFICHAGE SUR LE LCD
+  // ========================================================================
+
+  // Efface l'écran
+  lcd_clear();
+
+  // Affiche "Hello World!" sur la première ligne
+  lcd_set_cursor(0, 0); // Ligne 0, colonne 0
+  lcd_print("Hello World!");
+
+  // Affiche "LCD Grove v2.0" sur la deuxième ligne
+  lcd_set_cursor(1, 0); // Ligne 1, colonne 0
+  lcd_print("LCD Grove v2.0");
+
+  // Signal de succès
+  led_on(LED_GREEN);
+  buzzer_pattern_success();
+  led_off(LED_GREEN);
+
+  _delay_ms(3000);
+
+  // ========================================================================
+  // BOUCLE PRINCIPALE
+  // ========================================================================
+
+  while (1) {
+    // Exemple 1 : Compteur
+    lcd_clear();
+    lcd_set_cursor(0, 0);
+    lcd_print("Compteur:");
+
+    for (uint8_t i = 0; i < 10; i++) {
+      lcd_set_cursor(1, 0);
+      lcd_print("Valeur: ");
+      lcd_print_char('0' + i); // Affiche le chiffre
+
+      led_on(LED_BLUE);
+      buzzer_beep(50);
+      led_off(LED_BLUE);
+
+      _delay_ms(1000);
     }
-    
-    return 0;
+
+    _delay_ms(1000);
+
+    // Exemple 2 : Messages alternés
+    lcd_clear();
+    lcd_set_cursor(0, 0);
+    lcd_print("Lab-O-Track");
+    lcd_set_cursor(1, 0);
+    lcd_print("Systeme actif");
+
+    led_on(LED_GREEN);
+    _delay_ms(2000);
+    led_off(LED_GREEN);
+
+    lcd_clear();
+    lcd_set_cursor(0, 0);
+    lcd_print("Pret pour");
+    lcd_set_cursor(1, 0);
+    lcd_print("tracabilite!");
+
+    led_on(LED_BLUE);
+    _delay_ms(2000);
+    led_off(LED_BLUE);
+
+    // Exemple 3 : Test du curseur
+    lcd_clear();
+    lcd_set_cursor(0, 0);
+    lcd_print("Test curseur");
+
+    lcd_set_cursor(1, 0);
+    lcd_cursor(true); // Active le curseur
+    lcd_print("Visible");
+    _delay_ms(2000);
+
+    lcd_cursor(false); // Cache le curseur
+    lcd_blink(true);   // Active le clignotement
+    _delay_ms(2000);
+
+    lcd_blink(false); // Désactive le clignotement
+
+    _delay_ms(1000);
+  }
+
+  return 0;
 }

@@ -15,7 +15,7 @@ LDFLAGS = -mmcu=$(MCU)
 
 # Fichiers
 TARGET = main
-SRC = main.c drivers/led/led.c drivers/buzzer/buzzer.c
+SRC = main.c drivers/led/led.c drivers/buzzer/buzzer.c drivers/i2c/i2c.c drivers/lcd/lcd.c
 OBJ = $(SRC:.c=.o)
 
 # Compilation
