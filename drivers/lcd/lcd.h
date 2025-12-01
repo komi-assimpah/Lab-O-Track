@@ -51,8 +51,6 @@
 #define LCD_BLINK_ON 0x01    // Curseur clignotant
 #define LCD_BLINK_OFF 0x00   // Curseur fixe
 
-// Flags pour Function Set (0x20)
-// TODO:c'est valeurs sont conventionnelles ??
 #define LCD_8BIT_MODE 0x10 // Mode 8 bits
 #define LCD_4BIT_MODE 0x00 // Mode 4 bits
 #define LCD_2LINE 0x08     // 2 lignes
@@ -84,13 +82,13 @@ void lcd_clear(void);
 void lcd_home(void);
 
 
-/**
- * Positionne le curseur à une ligne et colonne donnée
- *
- * Paramètres :
- *   - row : numéro de ligne (0 ou 1)
- *   - col : numéro de colonne (0 à 15)
- */
+/*
+  * Positionne le curseur à une ligne et colonne donnée
+  *
+  * Notre LCD a une organisation mémoire particulière :
+  * - Ligne 0 : adresses 0x00 à 0x0F (colonnes 0-15)
+  * - Ligne 1 : adresses 0x40 à 0x4F (colonnes 0-15)
+  */
 void lcd_set_cursor(uint8_t row, uint8_t col);
 
 

@@ -53,61 +53,33 @@ static void lcd_send_data(uint8_t data) {
 
 bool lcd_init(void) {
   _delay_ms(50);
-
-  lcd_send_command(LCD_CMD_FUNCTION_SET | LCD_8BIT_MODE | LCD_2LINE |
-                   LCD_5x8_DOTS);
+  lcd_send_command(LCD_CMD_FUNCTION_SET | LCD_8BIT_MODE | LCD_2LINE | LCD_5x8_DOTS);
   _delay_ms(5);
-
   lcd_display_control = LCD_CMD_DISPLAY_CTRL | LCD_DISPLAY_ON | LCD_CURSOR_OFF | LCD_BLINK_OFF;
   lcd_send_command(lcd_display_control);
-
-
   lcd_clear();
-
-  /*
-   * Mode d'entrée :
-   * - Curseur se déplace vers la droite après chaque caractère
-   * - Pas de décalage automatique de l'écran
-   */
   lcd_send_command(LCD_CMD_ENTRY_MODE | LCD_ENTRY_RIGHT | LCD_ENTRY_SHIFT_DEC);
-
   _delay_ms(5);
-
   return true;
 }
 
+
 void lcd_clear(void) {
-  /*
-   * Envoie la commande CLEAR
-   * Efface tout l'écran et ramène le curseur en (0,0)
-   */
   lcd_send_command(LCD_CMD_CLEAR);
-  _delay_ms(2); // CLEAR prend du temps !
+  _delay_ms(2);
 }
+
 
 void lcd_home(void) {
-  /*
-   * Ramène le curseur en position (0,0)
-   * sans effacer l'écran
-   */
   lcd_send_command(LCD_CMD_HOME);
-  _delay_ms(2); // HOME prend aussi du temps
+  _delay_ms(2);
 }
 
-void lcd_set_cursor(uint8_t row, uint8_t col) {
-  /*
-   * Positionne le curseur à une ligne et colonne donnée
-   *
-   * Le LCD a une organisation mémoire particulière :
-   * - Ligne 0 : adresses 0x00 à 0x0F (colonnes 0-15)
-   * - Ligne 1 : adresses 0x40 à 0x4F (colonnes 0-15)
-   */
 
-  // Limite les valeurs pour éviter les erreurs
-  if (row >= LCD_ROWS)
-    row = LCD_ROWS - 1;
-  if (col >= LCD_COLS)
-    col = LCD_COLS - 1;
+void lcd_set_cursor(uint8_t row, uint8_t col) {
+
+  if (row >= LCD_ROWS) row = LCD_ROWS - 1;
+  if (col >= LCD_COLS) col = LCD_COLS - 1;
 
   /*
    * Calcul de l'adresse DDRAM
@@ -115,22 +87,16 @@ void lcd_set_cursor(uint8_t row, uint8_t col) {
    * Ligne 1 commence à 0x40
    */
   uint8_t addr = col;
-  if (row == 1) {
-    addr += 0x40;
-  }
+  if (row == 1) addr += 0x40;
 
-  /*
-   * Envoie la commande SET_DDRAM_ADDR avec l'adresse
-   */
   lcd_send_command(LCD_CMD_SET_DDRAM_ADDR | addr);
 }
 
+
 void lcd_print_char(char c) {
-  /*
-   * Affiche un seul caractère
-   */
   lcd_send_data((uint8_t)c);
 }
+
 
 void lcd_print(const char *str) {
   /*
@@ -143,11 +109,8 @@ void lcd_print(const char *str) {
   }
 }
 
+
 void lcd_display(bool on) {
-  /*
-   * Active ou désactive l'affichage
-   * (le contenu reste en mémoire)
-   */
   if (on) {
     lcd_display_control |= LCD_DISPLAY_ON;
   } else {
@@ -156,10 +119,9 @@ void lcd_display(bool on) {
   lcd_send_command(lcd_display_control);
 }
 
+
+
 void lcd_cursor(bool on) {
-  /*
-   * Affiche ou cache le curseur
-   */
   if (on) {
     lcd_display_control |= LCD_CURSOR_ON;
   } else {
@@ -168,10 +130,9 @@ void lcd_cursor(bool on) {
   lcd_send_command(lcd_display_control);
 }
 
+
+
 void lcd_blink(bool on) {
-  /*
-   * Active ou désactive le clignotement du curseur
-   */
   if (on) {
     lcd_display_control |= LCD_BLINK_ON;
   } else {
