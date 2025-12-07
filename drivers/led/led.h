@@ -4,45 +4,101 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <stdint.h>
+#include <stdbool.h>
 
-// Configuration des pins pour les 3 LEDs externes
-#define LED_RED_PIN     PD2
-#define LED_GREEN_PIN   PD3   // Vert, pas jaune !
-#define LED_BLUE_PIN    PD4
+/**
+ * @brief Classe statique pour contrôler les LEDs externes et intégrées.
+ *
+ * Toutes les méthodes sont statiques car la classe gère un ensemble de ressources matérielles fixes.
+ */
+class LedManager {
+public:
+    // Type énuméré pour identifier les LEDs (dans l'espace de noms de la classe)
+    enum class LedId : uint8_t {
+        RED,
+        GREEN,
+        BLUE,
+        BUILTIN
+    };
 
-#define LED_PORT        PORTD
-#define LED_DDR         DDRD
+    // Configuration des pins pour les 3 LEDs externes
+    #define LED_RED_PIN     PD2
+    #define LED_GREEN_PIN   PD3
+    #define LED_BLUE_PIN    PD4
+    #define LED_PORT        PORTD
+    #define LED_DDR         DDRD
 
-// LED intégrée (Pin 13) pour debug
-#define LED_BUILTIN_PIN PB5
-#define LED_BUILTIN_DDR DDRB
-#define LED_BUILTIN_PORT PORTB
+    // LED intégrée (Pin 13) pour debug
+    #define LED_BUILTIN_PIN PB5
+    #define LED_BUILTIN_DDR DDRB
+    #define LED_BUILTIN_PORT PORTB
 
-// Type énuméré pour identifier les LEDs
-typedef enum {
-    LED_RED,
-    LED_GREEN,
-    LED_BLUE,
-    LED_BUILTIN
-} led_id_t;
+    // --- Fonctions d'initialisation ---
 
-// Fonctions d'initialisation
-void led_init_all(void);
+    /**
+     * @brief Configure toutes les broches des LEDs comme sorties et les éteint.
+     */
+    static void initAll();
 
-// Contrôle individuel des LEDs
-void led_on(led_id_t led);
-void led_off(led_id_t led);
-void led_toggle(led_id_t led);
-void led_blink(led_id_t led, uint16_t duration_ms);
+    // --- Contrôle individuel des LEDs ---
 
-// Contrôle groupé
-void led_all_on(void);
-void led_all_off(void);
+    /**
+     * @brief Allume une LED spécifique.
+     */
+    static void on(LedId led);
 
-// Patterns prédéfinis
-void led_pattern_startup(void);
-void led_pattern_alert(void);
-void led_pattern_success(void);
-void led_pattern_sequence(void);
+    /**
+     * @brief Éteint une LED spécifique.
+     */
+    static void off(LedId led);
 
-#endif
+    /**
+     * @brief Inverse l'état d'une LED (utilise le registre PIN pour le toggle le cas échéant).
+     */
+    static void toggle(LedId led);
+
+    /**
+     * @brief Fait clignoter une LED pendant une durée spécifiée (bloquant).
+     */
+    static void blink(LedId led, uint16_t duration_ms);
+
+    // --- Contrôle groupé ---
+
+    /**
+     * @brief Allume toutes les LEDs.
+     */
+    static void allOn();
+
+    /**
+     * @brief Éteint toutes les LEDs.
+     */
+    static void allOff();
+
+    // --- Patterns prédéfinis (Bloquants) ---
+
+    /**
+     * @brief Pattern de démarrage (séquence R->V->B puis toutes).
+     */
+    static void patternStartup();
+
+    /**
+     * @brief Pattern d'alerte (Rouge clignotant).
+     */
+    static void patternAlert();
+
+    /**
+     * @brief Pattern de succès (Vert clignotant rapide).
+     */
+    static void patternSuccess();
+
+    /**
+     * @brief Pattern séquence (test de toutes les LEDs).
+     */
+    static void patternSequence();
+
+private:
+    // Méthode utilitaire pour obtenir le registre et le pin (optionnel, facilite l'implémentation)
+    // Non implémentée ici pour conserver la compatibilité des macros.
+};
+
+#endif // LED_H
