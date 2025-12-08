@@ -5,9 +5,13 @@
 #include <util/delay.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Configuration des pins pour les 3 LEDs externes
 #define LED_RED_PIN     PD2
-#define LED_GREEN_PIN   PD3   // Vert, pas jaune !
+#define LED_GREEN_PIN   PD3
 #define LED_BLUE_PIN    PD4
 
 #define LED_PORT        PORTD
@@ -44,5 +48,9 @@ void led_pattern_startup(void);
 void led_pattern_alert(void);
 void led_pattern_success(void);
 void led_pattern_sequence(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

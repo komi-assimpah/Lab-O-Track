@@ -5,6 +5,10 @@
 #include <util/delay.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Configuration : Bouton sur D7
 #define BUTTON_PIN PD7
 #define BUTTON_PORT PORTD
@@ -18,5 +22,9 @@ void button_init(void);
 bool button_is_pressed(void);
 bool button_wait_press(void);
 bool button_wait_release(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

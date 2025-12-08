@@ -5,27 +5,32 @@ PROGRAMMER = arduino
 PORT = /dev/ttyACM0
 
 # Outils
+CXX = avr-g++
 CC = avr-gcc
 OBJCOPY = avr-objcopy
 AVRDUDE = avrdude
 
 # Flags
+CXXFLAGS = -Os -DF_CPU=$(F_CPU) -mmcu=$(MCU) -Wall -Wextra -I. -fno-exceptions -fno-rtti
 CFLAGS = -Os -DF_CPU=$(F_CPU) -mmcu=$(MCU) -Wall -Wextra -I.
 LDFLAGS = -mmcu=$(MCU)
 
 # Fichiers
 TARGET = main
-SRC = main.c drivers/led/led.c drivers/buzzer/buzzer.c drivers/i2c/i2c.c drivers/lcd/lcd.c
-OBJ = $(SRC:.c=.o)
+CPP_SRC = main.cpp drivers/led/led.cpp drivers/buzzer/buzzer.cpp drivers/i2c/i2c.cpp drivers/lcd/lcd.cpp drivers/button/button.cpp drivers/rfid/rfid.cpp
+CPP_OBJ = $(CPP_SRC:.cpp=.o)
 
 # Compilation
 all: $(TARGET).hex
 
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(TARGET).elf: $(OBJ)
-	$(CC) $(LDFLAGS) -o $@ $^
+$(TARGET).elf: $(CPP_OBJ)
+	$(CXX) $(LDFLAGS) -o $@ $^
 
 $(TARGET).hex: $(TARGET).elf
 	$(OBJCOPY) -O ihex -R .eeprom $< $@
@@ -37,7 +42,12 @@ upload: $(TARGET).hex
 
 # Nettoyage
 clean:
-	rm -f $(TARGET).elf $(TARGET).hex $(OBJ)
+	rm -f $(TARGET).elf $(TARGET).hex $(CPP_OBJ)
+	rm -f tests/*.elf tests/*.hex tests/*.o
+
+# Nettoyage complet (inclut les fichiers objets des drivers)
+clean-all: clean
+	find drivers -name "*.o" -delete
 
 # Monitor
 monitor:

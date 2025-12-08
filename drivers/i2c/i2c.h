@@ -5,6 +5,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * ============================================================================
  * DRIVER I2C POUR ATMEGA328P (Arduino Uno)
@@ -96,5 +100,9 @@ uint8_t i2c_read_nack(void);
  * Retourne : le code de statut (registre TWSR masqué)
  */
 uint8_t i2c_get_status(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // I2C_H

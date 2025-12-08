@@ -1,15 +1,39 @@
-# Prerequisites
-*.d
+# ============================================================================
+# AVR / Embedded C Project - Lab-O-Track
+# ============================================================================
 
 # Compiled Object files
-*.slo
-*.lo
 *.o
 *.obj
+*.elf
+*.hex
+*.eep
+*.lss
+*.map
+*.sym
+
+# Prerequisites
+*.d
 
 # Precompiled Headers
 *.gch
 *.pch
+
+# Compiled Static libraries
+*.a
+*.lib
+*.lai
+*.la
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Executables
+*.exe
+*.out
+*.app
 
 # Linker files
 *.ilk
@@ -17,25 +41,77 @@
 # Debugger Files
 *.pdb
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
 # Fortran module files
 *.mod
 *.smod
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
-
-# debug information files
+# Debug information files
 *.dwo
+
+# ============================================================================
+# AVR-specific
+# ============================================================================
+
+# AVR build artifacts
+*.lst
+*.srec
+*.bin
+
+# ============================================================================
+# IDE / Editor
+# ============================================================================
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ============================================================================
+# OS-specific
+# ============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# ============================================================================
+# Build directories (optionnel si tu crées un dossier build/)
+# ============================================================================
+
+build/
+bin/
+obj/
+
+# ============================================================================
+# Logs et temporaires
+# ============================================================================
+
+*.log
+*.tmp
+*.bak
+*.backup
+
+
+FreeRTOS-Kernel-11.1.0/
