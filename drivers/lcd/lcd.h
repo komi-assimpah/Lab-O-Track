@@ -4,6 +4,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /*
  * ============================================================================
@@ -135,5 +139,9 @@ void lcd_cursor(bool on);
  *   - on : true pour faire clignoter, false pour curseur fixe
  */
 void lcd_blink(bool on);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -5,6 +5,10 @@
 #include <util/delay.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Configuration du buzzer sur D6
 #define BUZZER_PIN  PD6
 #define BUZZER_PORT PORTD
@@ -29,5 +33,9 @@ void buzzer_pattern_warning(void);
 // Patterns complexes
 void buzzer_pattern_siren(uint8_t cycles);
 void buzzer_pattern_morse_sos(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
