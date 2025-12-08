@@ -112,3 +112,6 @@ obj/
 *.tmp
 *.bak
 *.backup
+
+
+FreeRTOS-Kernel-11.1.0/

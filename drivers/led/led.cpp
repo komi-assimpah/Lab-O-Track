@@ -1,12 +1,9 @@
 #include "led.h"
 
-// Initialisation de toutes les LEDs
 void led_init_all(void) {
-    // Configurer les pins en sortie
     LED_DDR |= (1 << LED_RED_PIN) | (1 << LED_GREEN_PIN) | (1 << LED_BLUE_PIN);
     LED_BUILTIN_DDR |= (1 << LED_BUILTIN_PIN);
     
-    // Éteindre toutes les LEDs
     led_all_off();
 }
 

@@ -11,7 +11,7 @@ extern "C" {
 
 // Configuration des pins pour les 3 LEDs externes
 #define LED_RED_PIN     PD2
-#define LED_GREEN_PIN   PD3   // Vert, pas jaune !
+#define LED_GREEN_PIN   PD3
 #define LED_BLUE_PIN    PD4
 
 #define LED_PORT        PORTD
