@@ -17,7 +17,7 @@ LDFLAGS = -mmcu=$(MCU)
 
 # Fichiers
 TARGET = main
-CPP_SRC = main.cpp drivers/led/led.cpp drivers/buzzer/buzzer.cpp drivers/i2c/i2c.cpp drivers/lcd/lcd.cpp drivers/button/button.cpp
+CPP_SRC = main.cpp drivers/led/led.cpp drivers/buzzer/buzzer.cpp drivers/i2c/i2c.cpp drivers/lcd/lcd.cpp drivers/button/button.cpp drivers/rfid/rfid.cpp
 CPP_OBJ = $(CPP_SRC:.cpp=.o)
 
 # Compilation

@@ -36,12 +36,14 @@ BUZZER_SRC = $(DRIVER_DIR)/buzzer/buzzer.cpp
 BUTTON_SRC = $(DRIVER_DIR)/button/button.cpp
 I2C_SRC = $(DRIVER_DIR)/i2c/i2c.cpp
 LCD_SRC = $(DRIVER_DIR)/lcd/lcd.cpp
+RFID_SRC = $(DRIVER_DIR)/rfid/rfid.cpp
 
 LED_OBJ = $(LED_SRC:.cpp=.o)
 BUZZER_OBJ = $(BUZZER_SRC:.cpp=.o)
 BUTTON_OBJ = $(BUTTON_SRC:.cpp=.o)
 I2C_OBJ = $(I2C_SRC:.cpp=.o)
 LCD_OBJ = $(LCD_SRC:.cpp=.o)
+RFID_OBJ = $(RFID_SRC:.cpp=.o)
 
 # ============================================================================
 # RÈGLES DE COMPILATION
@@ -111,12 +113,22 @@ test_lcd.elf: test_lcd.o $(LCD_OBJ) $(I2C_OBJ) $(LED_OBJ) $(BUZZER_OBJ)
 test_lcd: test_lcd.hex
 	$(AVRDUDE) -c $(PROGRAMMER) -p $(MCU) -P $(PORT) -U flash:w:$<:i
 
+# Test RFID
+test_rfid.o: test_rfid.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+test_rfid.elf: test_rfid.o $(RFID_OBJ) $(LCD_OBJ) $(I2C_OBJ) $(LED_OBJ) $(BUZZER_OBJ)
+	$(CXX) $(LDFLAGS) -o $@ $^
+
+test_rfid: test_rfid.hex
+	$(AVRDUDE) -c $(PROGRAMMER) -p $(MCU) -P $(PORT) -U flash:w:$<:i
+
 # ============================================================================
 # RÈGLES GÉNÉRALES
 # ============================================================================
 
 # Compiler tous les tests (sans upload)
-all_tests: test_led.hex test_buzzer.hex test_button.hex test_i2c.hex test_lcd.hex
+all_tests: test_led.hex test_buzzer.hex test_button.hex test_i2c.hex test_lcd.hex test_rfid.hex
 	@echo "====================================="
 	@echo "Tous les tests ont été compilés !"
 	@echo "====================================="
@@ -134,10 +146,11 @@ info:
 	@echo "  make test_button  - Test du driver Button"
 	@echo "  make test_i2c     - Test du driver I2C"
 	@echo "  make test_lcd     - Test du driver LCD"
+	@echo "  make test_rfid    - Test du driver RFID"
 	@echo ""
 	@echo "Commandes utiles :"
 	@echo "  make all_tests    - Compiler tous les tests"
 	@echo "  make clean        - Nettoyer les fichiers"
 	@echo "  make info         - Afficher cette aide"
 
-.PHONY: test_led test_buzzer test_button test_i2c test_lcd all_tests clean info
+.PHONY: test_led test_buzzer test_button test_i2c test_lcd test_rfid all_tests clean info

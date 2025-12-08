@@ -25,6 +25,11 @@ Ce dossier contient les fichiers de test pour tous les drivers du système Lab-O
 - Fonctions testées : Affichage texte, Positionnement, Clear, Compteur
 - **⚠️ NÉCESSITE UN LCD CONNECTÉ**
 
+### 6. **test_rfid.cpp**
+- Test du driver RFID Grove 125KHz
+- Fonctions testées : Lecture tag, Comparaison, Mode surveillance
+- **⚠️ NÉCESSITE UN LECTEUR RFID ET DES TAGS**
+
 ## 🔧 Compilation et Upload
 
 ### Compiler et uploader un test spécifique :
@@ -35,6 +40,7 @@ make test_buzzer    # Upload test Buzzer
 make test_button    # Upload test Button
 make test_i2c       # Upload test I2C
 make test_lcd       # Upload test LCD
+make test_rfid      # Upload test RFID
 ```
 
 ### Compiler tous les tests (sans upload) :
@@ -61,6 +67,7 @@ make info
 | **Button** | Bouton sur D7 + LEDs + Buzzer |
 | **I2C** | Périphérique I2C (ex: LCD) sur A4/A5 + LEDs |
 | **LCD** | LCD Grove 16x2 sur I2C + LEDs + Buzzer |
+| **RFID** | Grove 125KHz RFID Reader sur D0/D1 + LCD + LEDs + Tags RFID |
 
 ## 📊 Interprétation des Résultats
 
@@ -115,3 +122,4 @@ make test_led  # Réessayer
 3. **test_button** - Vérifier le bouton (interactif)
 4. **test_i2c** - Scanner le bus I2C
 5. **test_lcd** - Tester l'affichage LCD
+6. **test_rfid** - Tester le lecteur RFID (débrancher USB après upload)
