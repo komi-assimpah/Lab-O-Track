@@ -30,6 +30,9 @@ I2C_OBJ = $(I2C_SRC:.cpp=.o)
 LCD_OBJ = $(LCD_SRC:.cpp=.o)
 RFID_OBJ = $(RFID_SRC:.cpp=.o)
 
+I2C_SLAVE_SRC = $(DRIVER_DIR)/smbus/i2c_slave.cpp
+I2C_SLAVE_OBJ = $(I2C_SLAVE_SRC:.cpp=.o)
+
 # ============================================================================
 # RÈGLES DE COMPILATION
 # ============================================================================
@@ -88,6 +91,16 @@ test_i2c.elf: test_i2c.o $(I2C_OBJ) $(LED_OBJ) $(BUZZER_OBJ)
 test_i2c: test_i2c.hex
 	$(AVRDUDE) -c $(PROGRAMMER) -p $(MCU) -P $(PORT) -U flash:w:$<:i
 
+# Test I2C Slave (communication avec Raspberry Pi)
+test_i2c_slave.o: test_i2c_slave.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+test_i2c_slave.elf: test_i2c_slave.o $(I2C_SLAVE_OBJ) $(LED_OBJ) $(BUZZER_OBJ)
+	$(CXX) $(LDFLAGS) -o $@ $^
+
+test_i2c_slave: test_i2c_slave.hex
+	$(AVRDUDE) -c $(PROGRAMMER) -p $(MCU) -P $(PORT) -U flash:w:$<:i
+
 # Test LCD
 test_lcd.o: test_lcd.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
@@ -122,7 +135,7 @@ test_rfid_minimal: test_rfid_minimal.hex
 # RÈGLES GÉNÉRALES
 # ============================================================================
 
-all_tests: test_led.hex test_buzzer.hex test_button.hex test_i2c.hex test_lcd.hex test_rfid.hex
+all_tests: test_led.hex test_buzzer.hex test_button.hex test_i2c.hex test_i2c_slave.hex test_lcd.hex test_rfid.hex
 	@echo "====================================="
 	@echo "Tous les tests ont été compilés !"
 	@echo "====================================="
@@ -139,6 +152,7 @@ info:
 	@echo "  make test_buzzer  - Test du driver Buzzer"
 	@echo "  make test_button  - Test du driver Button"
 	@echo "  make test_i2c     - Test du driver I2C"
+	@echo "  make test_i2c_slave - Test I2C Esclave (SMBus avec RPi)"
 	@echo "  make test_lcd     - Test du driver LCD"
 	@echo "  make test_rfid_minimal   - Test du driver RFID Minimal"
 	@echo ""
@@ -147,4 +161,4 @@ info:
 	@echo "  make clean        - Nettoyer les fichiers"
 	@echo "  make info         - Afficher cette aide"
 	
-.PHONY: test_led test_buzzer test_button test_i2c test_lcd test_rfid_minimal all_tests clean info
+.PHONY: test_led test_buzzer test_button test_i2c test_i2c_slave test_lcd test_rfid_minimal all_tests clean info
