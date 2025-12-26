@@ -1,4 +1,4 @@
-#include "RFID.h"
+#include "rfid.h"
 
 RFID::RFID(uint8_t rxPin, uint8_t txPin)
     : softSerial(rxPin, txPin), count(0)

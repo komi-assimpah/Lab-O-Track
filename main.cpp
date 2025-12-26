@@ -1,5 +1,5 @@
 #include <Arduino.h> // Necessary for init() (Timer hardwares for SoftwareSerial, for RFID)
-#include "Arduino_FreeRTOS.h"
+#include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
 #include "timers.h"
@@ -28,6 +28,7 @@ typedef enum
 static void vTaskReadTag(void *pvParameters);
 static void vTaskLogic(void *pvParameters);
 static void vTaskAlarm(void *pvParameters);
+
 static void vTimerCallback(TimerHandle_t xTimer);
 
 int main(void)
@@ -50,10 +51,10 @@ int main(void)
       (void *)0,
       vTimerCallback);
 
-  // Task creation
-  xTaskCreate(vTaskReadTag, "ReadTag", 100, NULL, TASK_SENSOR_PRIORITY, NULL);
-  xTaskCreate(vTaskLogic, "Logic", 110, NULL, TASK_LOGIC_PRIORITY, NULL);
-  xTaskCreate(vTaskAlarm, "Alarm", 100, NULL, TASK_ALARM_PRIORITY, &xAlarmTaskHandle);
+  // Task creation (stack sizes in words - reduced to fit 2KB RAM)
+  xTaskCreate(vTaskReadTag, "ReadTag", 85, NULL, TASK_SENSOR_PRIORITY, NULL);
+  xTaskCreate(vTaskLogic, "Logic", 90, NULL, TASK_LOGIC_PRIORITY, NULL);
+  xTaskCreate(vTaskAlarm, "Alarm", 70, NULL, TASK_ALARM_PRIORITY, &xAlarmTaskHandle);
 
   // The alarm task starts suspended
   vTaskSuspend(xAlarmTaskHandle);
@@ -148,7 +149,7 @@ static void vTaskLogic(void *pvParameters)
           led_off(LED_BLUE);
           led_on(LED_GREEN);
         }
-        else
+        else //pq un else et pas tout mettre dans le case EVT_TAG_RETURNED sans if ?
         {
           // Case 2 : Returned AFTER alarm -> Resolved
 
