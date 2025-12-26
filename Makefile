@@ -10,7 +10,7 @@ CC = avr-gcc
 OBJCOPY = avr-objcopy
 AVRDUDE = avrdude
 
-# Chemins des librairies
+# Lib
 ARDUINO_CORE = lib/arduinoLibsAndCore/cores/arduino
 ARDUINO_VARIANTS = lib/arduinoLibsAndCore/variants/standard
 FREERTOS_INC = lib/FreeRTOS-Kernel/include
@@ -60,14 +60,12 @@ $(TARGET).hex: $(TARGET).elf
 upload: $(TARGET).hex
 	$(AVRDUDE) -c $(PROGRAMMER) -p $(MCU) -P $(PORT) -U flash:w:$<:i
 
+
 # Nettoyage
 clean:
 	rm -f $(TARGET).elf $(TARGET).hex $(CPP_OBJ)
 	rm -f tests/*.elf tests/*.hex tests/*.o
-
-# Nettoyage complet (inclut les fichiers objets des drivers)
-clean-all: clean
-	find drivers -name "*.o" -delete
+	
 
 # Monitor
 monitor:
