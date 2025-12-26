@@ -140,12 +140,8 @@ uint8_t i2c_read_ack(void) {
   /*
    * Attend la réception du byte
    */
-  while (!(TWCR & (1 << TWINT)))
-    ;
+  while (!(TWCR & (1 << TWINT)));
 
-  /*
-   * Retourne le byte reçu
-   */
   return TWDR;
 }
 
@@ -159,22 +155,11 @@ uint8_t i2c_read_nack(void) {
    */
   TWCR = (1 << TWINT) | (1 << TWEN);
 
-  /*
-   * Attend la réception du byte
-   */
-  while (!(TWCR & (1 << TWINT)))
-    ;
+  while (!(TWCR & (1 << TWINT)));
 
-  /*
-   * Retourne le byte reçu
-   */
   return TWDR;
 }
 
 uint8_t i2c_get_status(void) {
-  /*
-   * Retourne le code de statut du registre TWSR
-   * On masque les 3 bits de poids faible (prescaler)
-   */
   return (TWSR & TW_STATUS_MASK);
 }
