@@ -17,7 +17,9 @@
 
 #define TAG_TARGET "OSC-01"
 
-#define SECURITY_TIMEOUT_MS (1UL * 60UL * 1000UL)
+#define SECURITY_TIMEOUT_MS 6000
+// #define SECURITY_TIMEOUT_MS (1UL * 60UL * 1000UL)
+//#define SECURITY_TIMEOUT_MS 60000
 
 /* Priorités des tâches */
 #define TASK_SENSOR_PRIORITY (tskIDLE_PRIORITY + 3)  /* High */

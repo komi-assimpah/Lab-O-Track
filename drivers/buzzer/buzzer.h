@@ -10,7 +10,6 @@ extern "C"
 {
 #endif
 
-// Configuration du buzzer sur D6
 #define BUZZER_PIN PD7
 #define BUZZER_PORT PORTD
 #define BUZZER_DDR DDRD

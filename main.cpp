@@ -40,6 +40,7 @@ int main(void)
   rfid.init();
 
   led_pattern_startup();
+  buzzer_pattern_startup();
 
   xEventQueue = xQueueCreate(5, sizeof(SystemEvent_t));
   xSecurityTimer = xTimerCreate(
