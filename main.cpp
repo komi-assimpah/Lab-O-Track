@@ -44,7 +44,7 @@ int main(void)
   xEventQueue = xQueueCreate(5, sizeof(SystemEvent_t));
   xSecurityTimer = xTimerCreate(
       "SecuTimer",
-      pdMS_TO_TICKS(60000),
+      pdMS_TO_TICKS(SECURITY_TIMEOUT_MS ),
       pdFALSE,
       (void *)0,
       vTimerCallback);
@@ -123,7 +123,6 @@ static void vTaskLogic(void *pvParameters)
         case EVT_TAG_MISSING:
           if (!timerRunning)
           {
-
             xTimerStart(xSecurityTimer, 0);
             timerRunning = true;
 
@@ -131,13 +130,10 @@ static void vTaskLogic(void *pvParameters)
             led_off(LED_GREEN);
             led_on(LED_BLUE);
           }
-          
           break;
 
         case EVT_TAG_RETURNED:
-          if (timerRunning)
-          {
-            // Case 1 : Returned BEFORE alarm -> Safe
+          if (timerRunning){ // Case 1 : Returned BEFORE alarm -> Safe
             xTimerStop(xSecurityTimer, 0);
             timerRunning = false;
 
@@ -145,26 +141,22 @@ static void vTaskLogic(void *pvParameters)
             led_off(LED_BLUE);
             led_on(LED_GREEN);
           }
-          else //TODO: pq un else et pas tout mettre dans le case EVT_TAG_RETURNED sans if ?
-          {
-            // Case 2 : Returned AFTER alarm -> Resolved
+          else { // Case 2 : Returned AFTER alarm -> Resolved
 
-            // Stop the alarm task
             vTaskSuspend(xAlarmTaskHandle);
 
-            // Manual cleanup of outputs (because the alarm task stops abruptly)
+            // Manual cleanup of outputs (because the alarm task stops abruptly without cleaning)
             buzzer_off();
             led_all_off();
 
-            // Success pattern
             led_pattern_success();
             led_on(LED_GREEN);
           }
           break;
+
         case EVT_TIMER_EXPIRED:
           timerRunning = false;
 
-          // Activate the alarm task
           vTaskResume(xAlarmTaskHandle);
           break;
       }
