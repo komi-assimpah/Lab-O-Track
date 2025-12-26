@@ -2,7 +2,6 @@
 
 // Initialisation du buzzer
 void buzzer_init(void) {
-    // Configurer le pin en sortie
     BUZZER_DDR |= (1 << BUZZER_PIN);    
     buzzer_off();
 }
