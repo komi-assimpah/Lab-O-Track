@@ -15,11 +15,7 @@
 #define RFID_RX_PIN 2
 #define RFID_TX_PIN 3
 
-/* Tag cible */
 #define TAG_TARGET "OSC-01"
-
-/* Timeout de sécurité : 1 minute */
-#define SECURITY_TIMEOUT_MS (1UL * 60UL * 1000UL)
 
 /* Priorités des tâches */
 #define TASK_SENSOR_PRIORITY (tskIDLE_PRIORITY + 3)  /* High */

@@ -1,4 +1,4 @@
-#include <Arduino.h> // Necessary for init() (Timer hardwares for SoftwareSerial, for RFID)
+#include <Arduino.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
@@ -41,22 +41,18 @@ int main(void)
 
   led_pattern_startup();
 
-  // Creating FreeRTOS components
   xEventQueue = xQueueCreate(5, sizeof(SystemEvent_t));
-
   xSecurityTimer = xTimerCreate(
       "SecuTimer",
-      pdMS_TO_TICKS(SECURITY_TIMEOUT_MS),
-      pdFALSE, // One-shot timer
+      pdMS_TO_TICKS(60000),
+      pdFALSE,
       (void *)0,
       vTimerCallback);
 
-  // Task creation (stack sizes in words - reduced to fit 2KB RAM)
   xTaskCreate(vTaskReadTag, "ReadTag", 85, NULL, TASK_SENSOR_PRIORITY, NULL);
   xTaskCreate(vTaskLogic, "Logic", 90, NULL, TASK_LOGIC_PRIORITY, NULL);
   xTaskCreate(vTaskAlarm, "Alarm", 70, NULL, TASK_ALARM_PRIORITY, &xAlarmTaskHandle);
 
-  // The alarm task starts suspended
   vTaskSuspend(xAlarmTaskHandle);
 
   // From here, the kernel takes control. The program never exits here.
@@ -123,54 +119,54 @@ static void vTaskLogic(void *pvParameters)
     if (xQueueReceive(xEventQueue, &rxEvent, portMAX_DELAY) == pdPASS)
     {
 
-      switch (rxEvent)
-      {
-      case EVT_TAG_MISSING:
-        if (!timerRunning)
-        {
+      switch (rxEvent){
+        case EVT_TAG_MISSING:
+          if (!timerRunning)
+          {
 
-          xTimerStart(xSecurityTimer, 0);
-          timerRunning = true;
+            xTimerStart(xSecurityTimer, 0);
+            timerRunning = true;
 
-          // Visual indicator "Waiting" (Blue)
-          led_off(LED_GREEN);
-          led_on(LED_BLUE);
-        }
-        break;
+            // Visual indicator "Waiting" (Blue)
+            led_off(LED_GREEN);
+            led_on(LED_BLUE);
+          }
+          
+          break;
 
-      case EVT_TAG_RETURNED:
-        if (timerRunning)
-        {
-          // Case 1 : Returned BEFORE alarm -> Safe
-          xTimerStop(xSecurityTimer, 0);
+        case EVT_TAG_RETURNED:
+          if (timerRunning)
+          {
+            // Case 1 : Returned BEFORE alarm -> Safe
+            xTimerStop(xSecurityTimer, 0);
+            timerRunning = false;
+
+            // Visual indicator "Safe" (Green)
+            led_off(LED_BLUE);
+            led_on(LED_GREEN);
+          }
+          else //TODO: pq un else et pas tout mettre dans le case EVT_TAG_RETURNED sans if ?
+          {
+            // Case 2 : Returned AFTER alarm -> Resolved
+
+            // Stop the alarm task
+            vTaskSuspend(xAlarmTaskHandle);
+
+            // Manual cleanup of outputs (because the alarm task stops abruptly)
+            buzzer_off();
+            led_all_off();
+
+            // Success pattern
+            led_pattern_success();
+            led_on(LED_GREEN);
+          }
+          break;
+        case EVT_TIMER_EXPIRED:
           timerRunning = false;
 
-          // Visual indicator "Safe" (Green)
-          led_off(LED_BLUE);
-          led_on(LED_GREEN);
-        }
-        else //pq un else et pas tout mettre dans le case EVT_TAG_RETURNED sans if ?
-        {
-          // Case 2 : Returned AFTER alarm -> Resolved
-
-          // Stop the alarm task
-          vTaskSuspend(xAlarmTaskHandle);
-
-          // Manual cleanup of outputs (because the alarm task stops abruptly)
-          buzzer_off();
-          led_all_off();
-
-          // Success pattern
-          led_pattern_success();
-          led_on(LED_GREEN);
-        }
-        break;
-      case EVT_TIMER_EXPIRED:
-        timerRunning = false;
-
-        // Activate the alarm task
-        vTaskResume(xAlarmTaskHandle);
-        break;
+          // Activate the alarm task
+          vTaskResume(xAlarmTaskHandle);
+          break;
       }
     }
   }
