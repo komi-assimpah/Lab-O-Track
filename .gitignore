@@ -1,8 +1,3 @@
-# ============================================================================
-# AVR / Embedded C Project - Lab-O-Track
-# ============================================================================
-
-# Compiled Object files
 *.o
 *.obj
 *.elf
@@ -12,101 +7,52 @@
 *.map
 *.sym
 
-# Prerequisites
 *.d
 
-# Precompiled Headers
 *.gch
 *.pch
 
-# Compiled Static libraries
 *.a
 *.lib
 *.lai
 *.la
 
-# Compiled Dynamic libraries
 *.so
 *.dylib
 *.dll
 
-# Executables
 *.exe
 *.out
 *.app
 
-# Linker files
 *.ilk
 
-# Debugger Files
 *.pdb
 
-# Fortran module files
-*.mod
-*.smod
-
-# Debug information files
 *.dwo
 
-# ============================================================================
-# AVR-specific
-# ============================================================================
 
-# AVR build artifacts
 *.lst
 *.srec
 *.bin
 
-# ============================================================================
-# IDE / Editor
-# ============================================================================
-
-# VSCode
 .vscode/
 *.code-workspace
 
-# Vim
-*.swp
-*.swo
-*~
 
-# Emacs
-*~
-\#*\#
-.\#*
-
-# Sublime Text
-*.sublime-project
-*.sublime-workspace
-
-# ============================================================================
-# OS-specific
-# ============================================================================
-
-# macOS
 .DS_Store
 .AppleDouble
 .LSOverride
 
-# Windows
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# Linux
-*~
 
-# ============================================================================
-# Build directories (optionnel si tu crées un dossier build/)
-# ============================================================================
 
 build/
 bin/
 obj/
-
-# ============================================================================
-# Logs et temporaires
-# ============================================================================
 
 *.log
 *.tmp
@@ -115,3 +61,5 @@ obj/
 
 
 FreeRTOS-Kernel-11.1.0/
+
+.pio/

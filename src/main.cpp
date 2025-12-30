@@ -1,0 +1,203 @@
+#include <Arduino.h>
+#include "Arduino_FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "timers.h"
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+#include "drivers/buzzer/buzzer.h"
+#include "drivers/led/led.h"
+#include "drivers/rfid/rfid.h"
+
+#define RFID_RX_PIN 2
+#define RFID_TX_PIN 3
+
+#define TAG_TARGET "OSC-01" //TODO: to get from database on raspberry
+
+#define SECURITY_TIMEOUT_MS 60000 //TODO: to get from database on raspberry
+
+#define TASK_SENSOR_PRIORITY (tskIDLE_PRIORITY + 3) // High
+#define TASK_LOGIC_PRIORITY (tskIDLE_PRIORITY + 2)  // Middle
+#define TASK_ALARM_PRIORITY (tskIDLE_PRIORITY + 1)  // Low
+
+RFID rfid(RFID_RX_PIN, RFID_TX_PIN);
+
+// Handles FreeRTOS
+QueueHandle_t xEventQueue;
+TimerHandle_t xSecurityTimer;
+TaskHandle_t xAlarmTaskHandle = NULL;
+
+typedef enum
+{
+  EVT_TAG_MISSING,
+  EVT_TAG_RETURNED,
+  EVT_TIMER_EXPIRED
+} SystemEvent_t;
+
+static void vTaskReadTag(void *pvParameters);
+static void vTaskLogic(void *pvParameters);
+static void vTaskAlarm(void *pvParameters);
+
+static void vTimerCallback(TimerHandle_t xTimer);
+
+int main(void)
+{
+  init();
+  Serial.begin(9600);
+  buzzer_init();
+  led_init_all();
+  rfid.init();
+
+  led_pattern_startup();
+  buzzer_pattern_startup();
+
+  xEventQueue = xQueueCreate(5, sizeof(SystemEvent_t));
+
+  xSecurityTimer = xTimerCreate(
+      "SecuTimer",
+      pdMS_TO_TICKS(SECURITY_TIMEOUT_MS),
+      pdFALSE, // One-shot timer
+      (void *)0,
+      vTimerCallback);
+
+  xTaskCreate(vTaskReadTag, "ReadTag", 85, NULL, TASK_SENSOR_PRIORITY, NULL);
+  xTaskCreate(vTaskLogic, "Logic", 90, NULL, TASK_LOGIC_PRIORITY, NULL);
+  xTaskCreate(vTaskAlarm, "Alarm", 70, NULL, TASK_ALARM_PRIORITY, &xAlarmTaskHandle);
+
+  vTaskSuspend(xAlarmTaskHandle);
+
+  // From here, the kernel takes control. The program never exits here.
+  vTaskStartScheduler();
+
+  return 0;
+}
+
+
+static void vTaskReadTag(void *pvParameters)
+{
+  bool isTagPresent = true;
+  uint8_t missingCount = 0;
+  const uint8_t THRESHOLD = 5;
+
+  Serial.println(F("RFID Task Started"));
+
+  for (;;)
+  {
+    bool readSuccess = false;
+
+    if (rfid.available())
+    {
+      rfid.read();
+      unsigned char *buffer = rfid.get_buffer();
+
+      if (buffer[0] != 0)
+      {
+        readSuccess = true;
+        rfid.clear();
+        Serial.println(F("TAG READ!"));
+      }
+    }
+
+    if (readSuccess)
+    {
+      missingCount = 0;
+      if (!isTagPresent)
+      {
+        isTagPresent = true;
+        Serial.println(F(">>> TAG RETURNED"));
+        SystemEvent_t evt = EVT_TAG_RETURNED;
+        xQueueSend(xEventQueue, &evt, 0);
+      }
+    }
+    else
+    {
+      missingCount++;
+      if (missingCount >= THRESHOLD && isTagPresent)
+      {
+        isTagPresent = false;
+
+        Serial.println(F(">>> TAG MISSING"));
+
+        SystemEvent_t evt = EVT_TAG_MISSING;
+        xQueueSend(xEventQueue, &evt, 0);
+      }
+    }
+
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+  }
+}
+
+
+static void vTaskLogic(void *pvParameters)
+{
+  SystemEvent_t rxEvent;
+  bool timerRunning = false;
+  bool alarmActive = false;
+
+  for (;;)
+  {
+    if (xQueueReceive(xEventQueue, &rxEvent, portMAX_DELAY) == pdPASS)
+    {
+      switch (rxEvent)
+      {
+        case EVT_TAG_MISSING:
+          if (!timerRunning && !alarmActive)
+          {
+            xTimerStart(xSecurityTimer, 0);
+            timerRunning = true;
+            led_off(LED_GREEN);
+            led_on(LED_BLUE);
+          }
+          break;
+
+        case EVT_TAG_RETURNED:  
+          if (timerRunning)
+          {
+            // Case 1 : Returned BEFORE alarm -> Safe
+            xTimerStop(xSecurityTimer, 0);
+            timerRunning = false;
+
+          // Visual indicator "Safe" (Green)
+          led_off(LED_BLUE);
+          led_on(LED_GREEN);
+        }
+        else
+        {
+          // Case 2 : Returned AFTER alarm -> Resolved
+          vTaskSuspend(xAlarmTaskHandle);
+          buzzer_off();
+          led_all_off();
+
+          led_pattern_success();
+          led_on(LED_GREEN);
+        }
+        break;
+      case EVT_TIMER_EXPIRED:
+        timerRunning = false;
+
+        vTaskResume(xAlarmTaskHandle);
+        break;
+      }
+    }
+  }
+}
+
+static void vTaskAlarm(void *pvParameters)
+{
+  for (;;)
+  {
+    led_pattern_alert();
+    buzzer_pattern_alert();
+
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+  }
+}
+
+void vTimerCallback(TimerHandle_t xTimer)
+{
+  SystemEvent_t evt = EVT_TIMER_EXPIRED;
+  xQueueSend(xEventQueue, &evt, 0);
+}
+
+extern "C" void loop() {}
