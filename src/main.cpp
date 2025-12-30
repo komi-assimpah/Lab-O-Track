@@ -1,20 +1,25 @@
 #include <Arduino.h>
-#include <Arduino_FreeRTOS.h>
-#include <queue.h>
-#include <task.h>
-#include <timers.h>
+#include "Arduino_FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "timers.h"
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
 #include "drivers/buzzer/buzzer.h"
 #include "drivers/led/led.h"
 #include "drivers/rfid/rfid.h"
 
 #define RFID_RX_PIN 2
 #define RFID_TX_PIN 3
-#define SECURITY_TIMEOUT_MS 6000
 
-#define TASK_SENSOR_PRIORITY (tskIDLE_PRIORITY + 3)
-#define TASK_LOGIC_PRIORITY  (tskIDLE_PRIORITY + 2)
-#define TASK_ALARM_PRIORITY  (tskIDLE_PRIORITY + 1)
+#define TAG_TARGET "OSC-01" //TODO: to get from database on raspberry
 
+#define SECURITY_TIMEOUT_MS 60000 //TODO: to get from database on raspberry
+
+#define TASK_SENSOR_PRIORITY (tskIDLE_PRIORITY + 3) // High
+#define TASK_LOGIC_PRIORITY (tskIDLE_PRIORITY + 2)  // Middle
+#define TASK_ALARM_PRIORITY (tskIDLE_PRIORITY + 1)  // Low
 
 RFID rfid(RFID_RX_PIN, RFID_TX_PIN);
 
@@ -48,10 +53,11 @@ int main(void)
   buzzer_pattern_startup();
 
   xEventQueue = xQueueCreate(5, sizeof(SystemEvent_t));
+
   xSecurityTimer = xTimerCreate(
       "SecuTimer",
-      pdMS_TO_TICKS(SECURITY_TIMEOUT_MS ),
-      pdFALSE,
+      pdMS_TO_TICKS(SECURITY_TIMEOUT_MS),
+      pdFALSE, // One-shot timer
       (void *)0,
       vTimerCallback);
 
@@ -70,10 +76,10 @@ int main(void)
 
 static void vTaskReadTag(void *pvParameters)
 {
-  (void)pvParameters;
-  bool isTagPresent = false;
-  uint16_t ticksSinceLastRead = 0;
-  const uint16_t MISSING_THRESHOLD = 15; 
+  bool isTagPresent = true;
+  uint8_t missingCount = 0;
+  const uint8_t THRESHOLD = 5;
+
   Serial.println(F("RFID Task Started"));
 
   for (;;)
@@ -95,8 +101,7 @@ static void vTaskReadTag(void *pvParameters)
 
     if (readSuccess)
     {
-      ticksSinceLastRead = 0;
-      
+      missingCount = 0;
       if (!isTagPresent)
       {
         isTagPresent = true;
@@ -107,29 +112,25 @@ static void vTaskReadTag(void *pvParameters)
     }
     else
     {
-      ticksSinceLastRead++;
-      
-      if (ticksSinceLastRead >= MISSING_THRESHOLD && isTagPresent)
+      missingCount++;
+      if (missingCount >= THRESHOLD && isTagPresent)
       {
         isTagPresent = false;
+
         Serial.println(F(">>> TAG MISSING"));
+
         SystemEvent_t evt = EVT_TAG_MISSING;
         xQueueSend(xEventQueue, &evt, 0);
       }
-      
-      // Évite overflow
-      if (ticksSinceLastRead > MISSING_THRESHOLD)
-        ticksSinceLastRead = MISSING_THRESHOLD;
     }
 
-    vTaskDelay(pdMS_TO_TICKS(200));
+    vTaskDelay(200 / portTICK_PERIOD_MS);
   }
 }
 
 
 static void vTaskLogic(void *pvParameters)
 {
-  (void)pvParameters;
   SystemEvent_t rxEvent;
   bool timerRunning = false;
   bool alarmActive = false;
@@ -150,30 +151,33 @@ static void vTaskLogic(void *pvParameters)
           }
           break;
 
-        case EVT_TAG_RETURNED:
+        case EVT_TAG_RETURNED:  
           if (timerRunning)
           {
+            // Case 1 : Returned BEFORE alarm -> Safe
             xTimerStop(xSecurityTimer, 0);
             timerRunning = false;
-            led_off(LED_BLUE);
-            led_on(LED_GREEN);
-          }
-          else if (alarmActive)
-          {
-            alarmActive = false;
-            vTaskSuspend(xAlarmTaskHandle);
-            buzzer_off();
-            led_all_off();
-            led_pattern_success();
-            led_on(LED_GREEN);
-          }
-          break;
 
-        case EVT_TIMER_EXPIRED:
-          timerRunning = false;
-          alarmActive = true;
-          vTaskResume(xAlarmTaskHandle);
-          break;
+          // Visual indicator "Safe" (Green)
+          led_off(LED_BLUE);
+          led_on(LED_GREEN);
+        }
+        else
+        {
+          // Case 2 : Returned AFTER alarm -> Resolved
+          vTaskSuspend(xAlarmTaskHandle);
+          buzzer_off();
+          led_all_off();
+
+          led_pattern_success();
+          led_on(LED_GREEN);
+        }
+        break;
+      case EVT_TIMER_EXPIRED:
+        timerRunning = false;
+
+        vTaskResume(xAlarmTaskHandle);
+        break;
       }
     }
   }
