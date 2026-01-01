@@ -13,10 +13,9 @@
 
 #define RFID_RX_PIN 2
 #define RFID_TX_PIN 3
-
-#define TAG_TARGET "OSC-01" //TODO: to get from database on raspberry
-
-#define SECURITY_TIMEOUT_MS 60000 //TODO: to get from database on raspberry
+// On pourrait faire un auto discovery pq l'arduino s'enregistre sur le raspberry
+#define TAG_TARGET "OSC-01"
+#define SECURITY_TIMEOUT_MS 60000 //15 min en prod
 
 #define TASK_SENSOR_PRIORITY (tskIDLE_PRIORITY + 3) // High
 #define TASK_LOGIC_PRIORITY (tskIDLE_PRIORITY + 2)  // Middle
@@ -144,7 +143,7 @@ static void vTaskLogic(void *pvParameters)
   {
     // Vérifier les commandes I2C du RPi (non-bloquant)
     uint8_t i2c_cmd = i2c_slave_get_pending_command();
-    if (i2c_cmd == CMD_ACK_ALARM && alarmActive) {
+    if (i2c_cmd == CMD_STOP_ALARM && alarmActive) {
       // Le RPi a acquitté l'alarme
       vTaskSuspend(xAlarmTaskHandle);
       buzzer_off();

@@ -31,7 +31,7 @@ extern "C" {
 
 // Commandes
 #define CMD_NOP           0x00
-#define CMD_ACK_ALARM     0x01
+#define CMD_STOP_ALARM     0x01
 
 // Status flags
 #define STATUS_TAG_PRESENT   (1 << 0)
