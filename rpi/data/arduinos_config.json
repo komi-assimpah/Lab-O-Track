@@ -1,0 +1,13 @@
+{
+    "devices": [
+        {
+            "id": "OSC-01",
+            "name": "Oscilloscope new gen",
+            "address": 66,
+            "timeout_minutes": 15
+        }
+    ],
+    "alerts": {
+        "email": "komi-jean-paul.assimpah@etu.univ-cotedazur.fr"
+    }
+}

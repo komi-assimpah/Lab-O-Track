@@ -9,13 +9,13 @@
 #include "drivers/buzzer/buzzer.h"
 #include "drivers/led/led.h"
 #include "drivers/rfid/rfid.h"
+#include "drivers/i2c/i2c_slave.h"
 
 #define RFID_RX_PIN 2
 #define RFID_TX_PIN 3
-
-#define TAG_TARGET "OSC-01" //TODO: to get from database on raspberry
-
-#define SECURITY_TIMEOUT_MS 60000 //TODO: to get from database on raspberry
+// On pourrait faire un auto discovery pq l'arduino s'enregistre sur le raspberry
+#define TAG_TARGET "OSC-01"
+#define SECURITY_TIMEOUT_MS 60000 //15 min en prod
 
 #define TASK_SENSOR_PRIORITY (tskIDLE_PRIORITY + 3) // High
 #define TASK_LOGIC_PRIORITY (tskIDLE_PRIORITY + 2)  // Middle
@@ -32,7 +32,8 @@ typedef enum
 {
   EVT_TAG_MISSING,
   EVT_TAG_RETURNED,
-  EVT_TIMER_EXPIRED
+  EVT_TIMER_EXPIRED,
+  EVT_I2C_COMMAND
 } SystemEvent_t;
 
 static void vTaskReadTag(void *pvParameters);
@@ -48,7 +49,8 @@ int main(void)
   buzzer_init();
   led_init_all();
   rfid.init();
-
+  i2c_slave_init();
+  
   led_pattern_startup();
   buzzer_pattern_startup();
 
@@ -134,50 +136,74 @@ static void vTaskLogic(void *pvParameters)
   SystemEvent_t rxEvent;
   bool timerRunning = false;
   bool alarmActive = false;
+  bool tagPresent = true;
+  i2c_slave_set_status(STATUS_TAG_PRESENT);
 
   for (;;)
   {
-    if (xQueueReceive(xEventQueue, &rxEvent, portMAX_DELAY) == pdPASS)
+    // Vérifier les commandes I2C du RPi (non-bloquant)
+    uint8_t i2c_cmd = i2c_slave_get_pending_command();
+    if (i2c_cmd == CMD_STOP_ALARM && alarmActive) {
+      // Le RPi a acquitté l'alarme
+      vTaskSuspend(xAlarmTaskHandle);
+      buzzer_off();
+      led_all_off();
+      alarmActive = false;
+      Serial.println(F("I2C: Alarm acknowledged by RPi"));
+    }
+
+    if (xQueueReceive(xEventQueue, &rxEvent, pdMS_TO_TICKS(100)) == pdPASS)
     {
       switch (rxEvent)
       {
         case EVT_TAG_MISSING:
+          tagPresent = false;
           if (!timerRunning && !alarmActive)
           {
             xTimerStart(xSecurityTimer, 0);
             timerRunning = true;
             led_off(LED_GREEN);
             led_on(LED_BLUE);
+            i2c_slave_set_status(STATUS_TIMER_RUNNING);
           }
           break;
 
-        case EVT_TAG_RETURNED:  
+        case EVT_TAG_RETURNED:
+          tagPresent = true;
           if (timerRunning)
           {
             // Case 1 : Returned BEFORE alarm -> Safe
             xTimerStop(xSecurityTimer, 0);
             timerRunning = false;
-
-          // Visual indicator "Safe" (Green)
-          led_off(LED_BLUE);
-          led_on(LED_GREEN);
-        }
-        else
-        {
-          // Case 2 : Returned AFTER alarm -> Resolved
-          vTaskSuspend(xAlarmTaskHandle);
-          buzzer_off();
-          led_all_off();
-
-          led_pattern_success();
-          led_on(LED_GREEN);
-        }
-        break;
-      case EVT_TIMER_EXPIRED:
-        timerRunning = false;
-
-        vTaskResume(xAlarmTaskHandle);
-        break;
+            // Visual indicator "Safe" (Green)
+            led_off(LED_BLUE);
+            led_on(LED_GREEN);
+            // Mise à jour I2C
+            i2c_slave_set_status(STATUS_TAG_PRESENT);
+          }
+          else if (alarmActive)
+          {
+            // Case 2 : Returned AFTER alarm -> Resolved
+            vTaskSuspend(xAlarmTaskHandle);
+            buzzer_off();
+            led_all_off();
+            alarmActive = false;
+            led_pattern_success();
+            led_on(LED_GREEN);
+            // Mise à jour I2C
+            i2c_slave_set_status(STATUS_TAG_PRESENT);
+          }
+          break;
+        case EVT_TIMER_EXPIRED:
+          timerRunning = false;
+          alarmActive = true;
+          vTaskResume(xAlarmTaskHandle);
+          // Mise à jour I2C
+          i2c_slave_set_status(STATUS_ALARM_ACTIVE);
+          break;
+        case EVT_I2C_COMMAND:
+          // Géré en dehors du switch via i2c_slave_get_pending_command()
+          break;
       }
     }
   }
