@@ -4,6 +4,7 @@ from i2c_master import I2CMaster
 from arduino_device import ArduinoDevice
 from gateway import Gateway
 from logger import Logger
+from notifier import Notifier
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -29,9 +30,10 @@ def main():
     
     i2c = I2CMaster(1)
     logger = Logger()
+    notifier = Notifier(config)
     devices = arduino_devices_init(config)
     
-    gateway = Gateway(i2c, devices, logger)
+    gateway = Gateway(i2c, devices, logger, notifier)
     
     print(f"Gateway started with {len(devices)} device(s)")
     gateway.run(poll_interval_seconds=5)

@@ -8,6 +8,7 @@
         }
     ],
     "alerts": {
+        "discord": "https://discord.com/api/webhooks/1457082272866898050/3tt51DZ-Wr58TC_fGOE853yjEbJ9oi661oCHvCj-GJ4qxwmX2uwGL-cck6vbcxe-7bsN",
         "email": "komi-jean-paul.assimpah@etu.univ-cotedazur.fr"
     }
 }
