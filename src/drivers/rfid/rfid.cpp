@@ -33,7 +33,7 @@ unsigned char *RFID::get_buffer()
 
 void RFID::clear()
 {
-    for (int i = 0; i < count; i++)
-        buffer[i] = 0;
+    /*for (int i = 0; i < count; i++)
+        buffer[i] = 0;*/
     count = 0;
 }

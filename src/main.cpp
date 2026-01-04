@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "Arduino_FreeRTOS.h"
+#include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
 #include "timers.h"
@@ -13,17 +13,16 @@
 
 #define RFID_RX_PIN 2
 #define RFID_TX_PIN 3
-// On pourrait faire un auto discovery pq l'arduino s'enregistre sur le raspberry
-#define TAG_TARGET "OSC-01"
-#define SECURITY_TIMEOUT_MS 60000 //15 min en prod
+
 
 #define TASK_SENSOR_PRIORITY (tskIDLE_PRIORITY + 3) // High
 #define TASK_LOGIC_PRIORITY (tskIDLE_PRIORITY + 2)  // Middle
 #define TASK_ALARM_PRIORITY (tskIDLE_PRIORITY + 1)  // Low
 
-RFID rfid(RFID_RX_PIN, RFID_TX_PIN);
+
 
 // Handles FreeRTOS
+RFID rfid(RFID_RX_PIN, RFID_TX_PIN);
 QueueHandle_t xEventQueue;
 TimerHandle_t xSecurityTimer;
 TaskHandle_t xAlarmTaskHandle = NULL;
@@ -45,7 +44,6 @@ static void vTimerCallback(TimerHandle_t xTimer);
 int main(void)
 {
   init();
-  Serial.begin(9600);
   buzzer_init();
   led_init_all();
   rfid.init();
@@ -54,10 +52,10 @@ int main(void)
   led_pattern_startup();
   buzzer_pattern_startup();
 
-  xEventQueue = xQueueCreate(5, sizeof(SystemEvent_t));
+  xEventQueue = xQueueCreate(3, sizeof(SystemEvent_t));
 
   xSecurityTimer = xTimerCreate(
-      "SecuTimer",
+      NULL,
       pdMS_TO_TICKS(SECURITY_TIMEOUT_MS),
       pdFALSE, // One-shot timer
       (void *)0,
@@ -76,13 +74,12 @@ int main(void)
 }
 
 
-static void vTaskReadTag(void *pvParameters)
+static void vTaskReadTag(void *)
 {
   bool isTagPresent = true;
   uint8_t missingCount = 0;
   const uint8_t THRESHOLD = 5;
 
-  Serial.println(F("RFID Task Started"));
 
   for (;;)
   {
@@ -97,7 +94,6 @@ static void vTaskReadTag(void *pvParameters)
       {
         readSuccess = true;
         rfid.clear();
-        Serial.println(F("TAG READ!"));
       }
     }
 
@@ -107,7 +103,6 @@ static void vTaskReadTag(void *pvParameters)
       if (!isTagPresent)
       {
         isTagPresent = true;
-        Serial.println(F(">>> TAG RETURNED"));
         SystemEvent_t evt = EVT_TAG_RETURNED;
         xQueueSend(xEventQueue, &evt, 0);
       }
@@ -119,7 +114,6 @@ static void vTaskReadTag(void *pvParameters)
       {
         isTagPresent = false;
 
-        Serial.println(F(">>> TAG MISSING"));
 
         SystemEvent_t evt = EVT_TAG_MISSING;
         xQueueSend(xEventQueue, &evt, 0);
@@ -131,12 +125,11 @@ static void vTaskReadTag(void *pvParameters)
 }
 
 
-static void vTaskLogic(void *pvParameters)
+static void vTaskLogic(void *)
 {
   SystemEvent_t rxEvent;
   bool timerRunning = false;
   bool alarmActive = false;
-  bool tagPresent = true;
   i2c_slave_set_status(STATUS_TAG_PRESENT);
 
   for (;;)
@@ -149,7 +142,6 @@ static void vTaskLogic(void *pvParameters)
       buzzer_off();
       led_all_off();
       alarmActive = false;
-      Serial.println(F("I2C: Alarm acknowledged by RPi"));
     }
 
     if (xQueueReceive(xEventQueue, &rxEvent, pdMS_TO_TICKS(100)) == pdPASS)
@@ -157,7 +149,6 @@ static void vTaskLogic(void *pvParameters)
       switch (rxEvent)
       {
         case EVT_TAG_MISSING:
-          tagPresent = false;
           if (!timerRunning && !alarmActive)
           {
             xTimerStart(xSecurityTimer, 0);
@@ -169,7 +160,6 @@ static void vTaskLogic(void *pvParameters)
           break;
 
         case EVT_TAG_RETURNED:
-          tagPresent = true;
           if (timerRunning)
           {
             // Case 1 : Returned BEFORE alarm -> Safe
@@ -206,10 +196,11 @@ static void vTaskLogic(void *pvParameters)
           break;
       }
     }
+    vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 }
 
-static void vTaskAlarm(void *pvParameters)
+static void vTaskAlarm(void *)
 {
   for (;;)
   {

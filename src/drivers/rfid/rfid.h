@@ -3,7 +3,7 @@
 
 #include <SoftwareSerial.h>
 
-#define RFID_BUFFER_SIZE 64
+#define RFID_BUFFER_SIZE 16
 
 class RFID
 {
@@ -19,7 +19,7 @@ public:
 private:
     SoftwareSerial softSerial;
     unsigned char buffer[RFID_BUFFER_SIZE];
-    int count;
+    uint8_t count;
 };
 
 #endif
