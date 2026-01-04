@@ -20,8 +20,13 @@ class Notifier:
             return False
         
         try:
+            # Parse timestamp for date and time
+            dt = datetime.now()
+            date_str = dt.strftime("%Y-%m-%d")
+            time_str = dt.strftime("%H:%M:%S")
+            
             payload = {
-                "content": f"**ALARM**\n**Device:** {device_name} ({device_id})\n**Message:** {message}"
+                "content": f"**ALARM**\n**Device:** {device_name} ({device_id})\n**On:** {date_str}\n**At:** {time_str}\n**Message:** {message}"
             }
             data = json.dumps(payload).encode('utf-8')
             req = urllib.request.Request(
