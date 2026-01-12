@@ -2,10 +2,11 @@ import time
 from arduino_device import STATUS_TAG_PRESENT, STATUS_TIMER_RUNNING, STATUS_ALARM_ACTIVE
 
 class Gateway:
-    def __init__(self, i2c_master, arduino_devices, logger):
+    def __init__(self, i2c_master, arduino_devices, logger, notifier=None):
         self.i2c = i2c_master
         self.arduino_devices = arduino_devices
         self.logger = logger
+        self.notifier = notifier
         self.previous_states = {}
 
     def poll_all(self):
@@ -21,7 +22,11 @@ class Gateway:
             current_status = device.last_status
             previous_status = self.previous_states.get(device.id, None)
             
-            if previous_status is None:# First poll
+            # Skip if I2C read failed
+            if current_status is None:
+                continue
+            
+            if previous_status is None:  # First poll
                 self.previous_states[device.id] = current_status
                 continue
             
@@ -36,12 +41,15 @@ class Gateway:
                 
                 # Alarm started
                 if not (previous_status & STATUS_ALARM_ACTIVE) and (current_status & STATUS_ALARM_ACTIVE):
-                    self._log_state_change(device, "ALARM_STARTED", "Alarme started")
-                    # TODO: send email alert
+                    self._log_state_change(device, "ALARM_STARTED", "Alarm started")
+                    if self.notifier:
+                        self.notifier.notify(device.id, device.name, "ALARM_STARTED", "device missing, alarm started 🚨")
                 
                 # Alarm stopped
                 if (previous_status & STATUS_ALARM_ACTIVE) and not (current_status & STATUS_ALARM_ACTIVE):
-                    self._log_state_change(device, "ALARM_STOPPED", "Alarme stopped")
+                    self._log_state_change(device, "ALARM_STOPPED", "Alarm stopped")
+                    if self.notifier:
+                        self.notifier.notify(device.id, device.name, "ALARM_STOPPED", "device returned, alarm stopped ✅")
                 
                 self.previous_states[device.id] = current_status
     

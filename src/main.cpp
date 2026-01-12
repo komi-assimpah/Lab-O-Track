@@ -14,6 +14,10 @@
 #define RFID_RX_PIN 2
 #define RFID_TX_PIN 3
 
+// On pourrait faire un auto discovery pq l'arduino s'enregistre sur le raspberry
+#define TAG_TARGET "OSC-01"
+#define SECURITY_TIMEOUT_MS 15000 //15 min en prod
+
 
 #define TASK_SENSOR_PRIORITY (tskIDLE_PRIORITY + 3) // High
 #define TASK_LOGIC_PRIORITY (tskIDLE_PRIORITY + 2)  // Middle
