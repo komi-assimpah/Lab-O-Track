@@ -1,32 +1,18 @@
-#include <Arduino.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
 #include "timers.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
-
 #include "drivers/buzzer/buzzer.h"
 #include "drivers/led/led.h"
 #include "drivers/rfid/rfid.h"
 #include "drivers/i2c/i2c_slave.h"
 
-#define RFID_RX_PIN 2
-#define RFID_TX_PIN 3
 
-// On pourrait faire un auto discovery pq l'arduino s'enregistre sur le raspberry
-#define TAG_TARGET "OSC-01"
-#define SECURITY_TIMEOUT_MS 15000 //15 min en prod
-
-
-#define TASK_SENSOR_PRIORITY (tskIDLE_PRIORITY + 3) // High
-#define TASK_LOGIC_PRIORITY (tskIDLE_PRIORITY + 2)  // Middle
-#define TASK_ALARM_PRIORITY (tskIDLE_PRIORITY + 1)  // Low
-
-
+RFID rfid(RFID_RX_PIN, RFID_TX_PIN); // Instantiate RFID object
 
 // Handles FreeRTOS
-RFID rfid(RFID_RX_PIN, RFID_TX_PIN);
 QueueHandle_t xEventQueue;
 TimerHandle_t xSecurityTimer;
 TaskHandle_t xAlarmTaskHandle = NULL;
@@ -42,36 +28,34 @@ typedef enum
 static void vTaskReadTag(void *pvParameters);
 static void vTaskLogic(void *pvParameters);
 static void vTaskAlarm(void *pvParameters);
-
 static void vTimerCallback(TimerHandle_t xTimer);
 
 int main(void)
 {
-  init();
+
+  // Intialize hardware
   buzzer_init();
   led_init_all();
   rfid.init();
   i2c_slave_init();
   
+  // Initial LED and Buzzer patterns
   led_pattern_startup();
   buzzer_pattern_startup();
 
+  // Create FreeRTOS objects
   xEventQueue = xQueueCreate(3, sizeof(SystemEvent_t));
+  xSecurityTimer = xTimerCreate(NULL,pdMS_TO_TICKS(SECURITY_TIMEOUT_MS),pdFALSE,(void *)0,vTimerCallback);
 
-  xSecurityTimer = xTimerCreate(
-      NULL,
-      pdMS_TO_TICKS(SECURITY_TIMEOUT_MS),
-      pdFALSE, // One-shot timer
-      (void *)0,
-      vTimerCallback);
-
+  // Create FreeRTOS tasks
   xTaskCreate(vTaskReadTag, "ReadTag", 85, NULL, TASK_SENSOR_PRIORITY, NULL);
   xTaskCreate(vTaskLogic, "Logic", 90, NULL, TASK_LOGIC_PRIORITY, NULL);
   xTaskCreate(vTaskAlarm, "Alarm", 70, NULL, TASK_ALARM_PRIORITY, &xAlarmTaskHandle);
 
+  // Start with alarm task suspended
   vTaskSuspend(xAlarmTaskHandle);
 
-  // From here, the kernel takes control. The program never exits here.
+  // Start the scheduler
   vTaskStartScheduler();
 
   return 0;
@@ -88,7 +72,7 @@ static void vTaskReadTag(void *)
   for (;;)
   {
     bool readSuccess = false;
-
+    // If the tag is detected, we read it
     if (rfid.available())
     {
       rfid.read();
@@ -104,6 +88,7 @@ static void vTaskReadTag(void *)
     if (readSuccess)
     {
       missingCount = 0;
+      // Send event only if the tag was previously missing
       if (!isTagPresent)
       {
         isTagPresent = true;
@@ -114,11 +99,11 @@ static void vTaskReadTag(void *)
     else
     {
       missingCount++;
+      // Send event only if the tag was previously present and threshold is reached
       if (missingCount >= THRESHOLD && isTagPresent)
       {
         isTagPresent = false;
-
-
+        if (missingCount > THRESHOLD)missingCount = THRESHOLD; // Prevent overflow
         SystemEvent_t evt = EVT_TAG_MISSING;
         xQueueSend(xEventQueue, &evt, 0);
       }
@@ -138,10 +123,10 @@ static void vTaskLogic(void *)
 
   for (;;)
   {
-    // Vérifier les commandes I2C du RPi (non-bloquant)
+    // Check I2C commands from the RPi (non-blocking)
     uint8_t i2c_cmd = i2c_slave_get_pending_command();
     if (i2c_cmd == CMD_STOP_ALARM && alarmActive) {
-      // Le RPi a acquitté l'alarme
+      // The RPi acknowledged the alarm
       vTaskSuspend(xAlarmTaskHandle);
       buzzer_off();
       led_all_off();
@@ -153,6 +138,7 @@ static void vTaskLogic(void *)
       switch (rxEvent)
       {
         case EVT_TAG_MISSING:
+          // Start the security timer only if not already running and alarm not active
           if (!timerRunning && !alarmActive)
           {
             xTimerStart(xSecurityTimer, 0);
@@ -172,7 +158,7 @@ static void vTaskLogic(void *)
             // Visual indicator "Safe" (Green)
             led_off(LED_BLUE);
             led_on(LED_GREEN);
-            // Mise à jour I2C
+            // I2C status update
             i2c_slave_set_status(STATUS_TAG_PRESENT);
           }
           else if (alarmActive)
@@ -184,7 +170,7 @@ static void vTaskLogic(void *)
             alarmActive = false;
             led_pattern_success();
             led_on(LED_GREEN);
-            // Mise à jour I2C
+            // I2C status update
             i2c_slave_set_status(STATUS_TAG_PRESENT);
           }
           break;
@@ -192,11 +178,11 @@ static void vTaskLogic(void *)
           timerRunning = false;
           alarmActive = true;
           vTaskResume(xAlarmTaskHandle);
-          // Mise à jour I2C
+          // I2C status update
           i2c_slave_set_status(STATUS_ALARM_ACTIVE);
           break;
         case EVT_I2C_COMMAND:
-          // Géré en dehors du switch via i2c_slave_get_pending_command()
+          // Handled outside the switch via i2c_slave_get_pending_command()
           break;
       }
     }
@@ -210,15 +196,13 @@ static void vTaskAlarm(void *)
   {
     led_pattern_alert();
     buzzer_pattern_alert();
-
     vTaskDelay(500 / portTICK_PERIOD_MS);
   }
 }
 
 void vTimerCallback(TimerHandle_t xTimer)
 {
+  // Timer expired -> send event to logic task so he can activate the alarm
   SystemEvent_t evt = EVT_TIMER_EXPIRED;
   xQueueSend(xEventQueue, &evt, 0);
 }
-
-extern "C" void loop() {}
