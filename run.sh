@@ -1,4 +1,4 @@
-scp -r rpi/ labo@192.168.0.14:~/Lab-O-Track/rpi # make sure to make the folder Lab-O-Track on the rpi
+scp -r rpi/ labo@labo:~/Lab-O-Track/rpi # make sure to create firstly the folder Lab-O-Track on the Raspberry
 
 ~/.platformio/penv/bin/pio run
 

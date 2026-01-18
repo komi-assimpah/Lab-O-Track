@@ -4,7 +4,10 @@
             "id": "OSC-01",
             "name": "Oscilloscope new gen",
             "address": 66,
-            "timeout_minutes": 15
+            "timeout_minutes": 15,
+            "allowed_tags": [
+                "\u000201068DF4B9C7\u0003"
+            ]
         }
     ],
     "alerts": {

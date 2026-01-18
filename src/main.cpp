@@ -14,7 +14,7 @@
 #define RFID_RX_PIN 2
 #define RFID_TX_PIN 3
 // On pourrait faire un auto discovery pq l'arduino s'enregistre sur le raspberry
-#define TAG_TARGET "OSC-01"
+// #define TAG_TARGET "OSC-01"
 #define SECURITY_TIMEOUT_MS 15000 //15 min en prod
 
 #define TASK_SENSOR_PRIORITY (tskIDLE_PRIORITY + 3) // High
@@ -95,9 +95,23 @@ static void vTaskReadTag(void *pvParameters)
 
       if (buffer[0] != 0)
       {
-        readSuccess = true;
+        // Convert buffer to string
+        char scannedTag[16] = {0};
+        strncpy(scannedTag, (char*)buffer, 15); // Ensure null termination
+        
+        Serial.print(F("TAG READ: "));
+        Serial.println(scannedTag);
+
+        // Check against allowed tags received from RPi
+        if (i2c_slave_check_tag(scannedTag)) {
+            readSuccess = true;
+            Serial.println(F(">>> CORRECT TAG MATCH"));
+        } else {
+            Serial.print(F(">>> WRONG TAG: "));
+            Serial.println(scannedTag);
+        }
+        
         rfid.clear();
-        Serial.println(F("TAG READ!"));
       }
     }
 
