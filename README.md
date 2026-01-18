@@ -120,11 +120,11 @@ cd rpi
 python3 main.py
 ```
 
-**Fonctionnement :**
-1. Tag présent → LED Verte
-2. Tag retiré → LED Bleue + Timer démarre
-3. Timeout dépassé → LED Rouge + Buzzer + Notification Discord
-4. Tag replacé → Arrêt alarme + Notification Discord
+**Comportement du système :**
+1. **Objet rangé** : LED Verte
+2. **Objet emprunté** : LED Bleue, timer démarre
+3. **Temps dépassé** : LED Rouge + Buzzer + Notification Discord (alarme démarrée)
+4. **Objet retourné** : LED Verte + Arrêt alarme + Notification Discord (alarme arrêtée)
 
 ---
 
