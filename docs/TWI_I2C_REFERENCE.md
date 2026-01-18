@@ -1,6 +1,6 @@
 # Documentation TWI (I2C) - ATMega328P
 
-## 📖 Source Officielle
+## Source Officielle
 ATMega328P Datasheet (Microchip), Chapitre 21 "2-wire Serial Interface (TWI)"
 
 ---

@@ -7,14 +7,17 @@ RFID::RFID(uint8_t rxPin, uint8_t txPin)
 
 void RFID::init()
 {
+    // Initialize SoftwareSerial for RFID communication
     softSerial.begin(9600);
 }
 
 bool RFID::available()
 {
+    // Check if tag data is available
     return softSerial.available() > 0;
 }
 
+// Read data from RFID tag into buffer
 int RFID::read()
 {
     while (softSerial.available())
