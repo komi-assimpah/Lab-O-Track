@@ -1,55 +1,53 @@
 # Lab-O-Track
 
-Système de surveillance d'équipements de laboratoire avec alarme locale (Arduino) et notifications distantes (Discord).
+Laboratory equipment monitoring system with local alarm (Arduino) and remote notifications (Discord).
 
 ---
 
-## Matériel Requis
+## Required Hardware
 
-**Arduino (Nœud embarqué) :**
+**Arduino (Embedded Node):**
 - Arduino Uno
 - Grove Base Shield V2
 - Grove - 125KHz RFID Reader
-- Tag RFID 125KHz
-- 3x Grove - LED (Rouge, Verte, Bleue)
+- 125KHz RFID Tag
+- 3x Grove - LED (Red, Green, Blue)
 - Grove - Buzzer
 
-**Raspberry Pi (Passerelle) :**
-- Raspberry Pi 3 (ou supérieur)
+**Raspberry Pi (Gateway):**
+- Raspberry Pi 3 (or higher)
 - GrovePi+
-- Connexion Internet (pour notifications Discord)
+- Internet connection (for Discord notifications)
 
-**Câblage :**
-- Câbles Grove (fournis avec les modules)
-- 1x câble Grove 4 pins pour connexion I2C entre shields
-
+**Wiring:**
+- Grove cables (included with modules)
+- 1x Grove 4-pin cable for I2C connection between shields
 
 ---
 
-## Câblage
+## Wiring
 
-### Arduino Uno (avec Grove Base Shield)
+### Arduino Uno (with Grove Base Shield)
 
-Le **Grove Base Shield** est monté sur l'Arduino. Les composants se connectent via les ports Grove :
+The **Grove Base Shield** is mounted on the Arduino. Components connect via Grove ports:
 
-| Composant | Port Grove |
+| Component | Grove Port |
 |-----------|------------|
 | **Grove RFID Reader** | D2 |
-| **LED Rouge** | D4 |
-| **LED Verte** | D5 |
-| **LED Bleue** | D6 |
+| **Red LED** | D4 |
+| **Green LED** | D5 |
+| **Blue LED** | D6 |
 | **Buzzer** | D7 |
 
-### Raspberry Pi 3 (avec GrovePi+)
+### Raspberry Pi 3 (with GrovePi+)
 
-Le **GrovePi+** est monté sur la Raspberry Pi.
+The **GrovePi+** is mounted on the Raspberry Pi.
 
-### Communication I2C (Arduino ↔ Raspberry Pi)
+### I2C Communication (Arduino ↔ Raspberry Pi)
 
-Utilisez un **câble Grove 4 pins** pour connecter directement les ports I2C des deux shields :
-- Grove Base Shield : Port I2C
-- GrovePi+ : Port I2C
-
+Use a **Grove 4-pin cable** to directly connect the I2C ports of both shields:
+- Grove Base Shield: I2C Port
+- GrovePi+: I2C Port
 
 ---
 
@@ -58,25 +56,30 @@ Utilisez un **câble Grove 4 pins** pour connecter directement les ports I2C des
 ### Arduino
 
 ```bash
-# Installer la toolchain AVR
+# Install AVR toolchain
 sudo apt-get install gcc-avr avr-libc binutils-avr avrdude
 
-# Compiler et téléverser
-make upload
+# Compile Arduino libraries
+cd src/lib/arduinoLibsAndCore
+make
+cd ../../..
 
+# Compile and upload firmware
+cd src
+make upload
 ```
 
 ### Raspberry Pi
 
 ```bash
-# Activer I2C
+# Enable I2C
 sudo raspi-config  # Interface Options > I2C > Enable
 
-# Installer dépendances Python
+# Install Python dependencies
 sudo apt-get install i2c-tools
 pip3 install smbus2 requests
 
-# Vérifier détection Arduino (doit afficher 42)
+# Verify Arduino detection (should display 42)
 i2cdetect -y 1
 ```
 
@@ -84,7 +87,7 @@ i2cdetect -y 1
 
 ## Configuration
 
-Éditez `rpi/data/arduinos_config.json` :
+Edit `rpi/data/arduinos_config.json`:
 
 ```json
 {
@@ -98,37 +101,37 @@ i2cdetect -y 1
         }
     ],
     "alerts": {
-        "discord_webhook": "https://discord.com/api/webhooks/VOTRE_WEBHOOK_ICI"
+        "discord_webhook": "https://discord.com/api/webhooks/YOUR_WEBHOOK_HERE"
     }
 }
 ```
 
-**Paramètres clés :**
-- `i2c_address` : Adresse I2C de l'Arduino (66 = 0x42 en décimal)
-- `timeout_seconds` : Délai avant alarme (en secondes)
-- `allowed_tags` : Liste des tags RFID autorisés
-- `discord_webhook` : URL du webhook Discord pour les notifications
+**Key parameters:**
+- `i2c_address`: Arduino I2C address (66 = 0x42 in decimal)
+- `timeout_seconds`: Delay before alarm (in seconds)
+- `allowed_tags`: List of authorized RFID tags
+- `discord_webhook`: Discord webhook URL for notifications
 
 ---
 
-## Utilisation
+## Usage
 
-Lancer la passerelle :
+Launch the gateway:
 
 ```bash
 cd rpi
 python3 main.py
 ```
 
-**Comportement du système :**
-1. **Objet rangé** : LED Verte
-2. **Objet emprunté** : LED Bleue, timer démarre
-3. **Temps dépassé** : LED Rouge + Buzzer + Notification Discord (alarme démarrée)
-4. **Objet retourné** : LED Verte + Arrêt alarme + Notification Discord (alarme arrêtée)
+**System behavior:**
+1. **Item stored**: Green LED
+2. **Item borrowed**: Blue LED, timer starts
+3. **Timeout exceeded**: Red LED + Buzzer + Discord notification (alarm started)
+4. **Item returned**: Green LED + Alarm stopped + Discord notification (alarm stopped)
 
 ---
 
-## Auteurs
+## Authors
 
 - **Sagesse Kokouvi ADABADJI**
 - **Momen TAKROUN**
