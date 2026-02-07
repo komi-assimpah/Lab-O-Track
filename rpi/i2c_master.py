@@ -27,7 +27,6 @@ class I2CMaster:
             return False
 
     def stop_alarm(self, address):
-        # TODO: implement a timeout of alarm and send a stop alarm command, and then the email
         return self.send_command(address, CMD_STOP_ALARM)
 
     def close(self):
